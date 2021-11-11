@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 
 import net.bigpoint.assessment.gasstation.exceptions.NotEnoughGasException;
@@ -12,8 +13,8 @@ import net.bigpoint.assessment.gasstation.exceptions.GasTooExpensiveException;
 
 public final class GasStationImplementation implements GasStation {
 
-    Collection<GasPump> GasPumps = new HashSet<GasPump>();
-    List<Integer> UsedGasPumps = new ArrayList<Integer>();
+    Collection<GasPump> GasPumps = new ArrayList<GasPump>();
+    List<Iterator<GasPump>> UsedGasPumps = new ArrayList<Iterator<GasPump>>();
     Map<GasType, Double> Prices = new HashMap<GasType, Double>();
 
     double Revenue = 0;
@@ -27,12 +28,9 @@ public final class GasStationImplementation implements GasStation {
      * @param pump the gas pump
      */
     public void addGasPump(GasPump pump) {
+        double standartPrice = 1.5;
         // It is unclear if a gas station always has all gas types available
-        if (Prices.size() < GasType.values().length) {
-            // add gas type to map
-            // set standart price
-            Prices.put(pump.getGasType(), 1.5);
-        }
+        Prices.putIfAbsent(pump.getGasType(), standartPrice);
 
         GasPumps.add(pump);
     }
@@ -47,9 +45,7 @@ public final class GasStationImplementation implements GasStation {
     public Collection<GasPump> getGasPumps() {
         // Create new collection so it can be manipulated
         Collection<GasPump> gasPumps = new HashSet<>();
-        for (GasPump gasPump : GasPumps) {
-            gasPumps.add(gasPump);
-        }
+        gasPumps.addAll(GasPumps);
 
         return gasPumps;
     }
@@ -71,28 +67,64 @@ public final class GasStationImplementation implements GasStation {
      */
     public double buyGas(GasType type, double amountInLiters, double maxPricePerLiter)
             throws NotEnoughGasException, GasTooExpensiveException {
-        // If type of gas pump
-        // Search for unused gas pump
-        // if unused gas pump
-        // If amount of litres > litres of gas type
-        if (amountInLiters < 0) {
-            // Add to failed because of no more litres
-            // Throw exception
+
+        Iterator<GasPump> iterator = GasPumps.iterator();
+
+        // Will throw exception when done with every Gas Pump
+        Boolean hasNoGas = false;
+
+        while (iterator.hasNext()) {
+
+            // Search for unused gas pump
+            GasPump gasPump = iterator.next();
+
+            if (gasPump.getGasType() == type) {
+
+                // iterators of used gas pumps are contained in used gas pumps, so the program knows which are in use
+                if (!UsedGasPumps.contains(iterator)) {
+
+                    hasNoGas = false;
+                    if (maxPricePerLiter > Prices.get(type)) {
+
+                        ++NumberOfCancellationsTooExpensive;
+                        throw new GasTooExpensiveException();
+                        // No need to check any other gas pumps because it always costs the same
+                    }
+                    
+                    if (amountInLiters > gasPump.getRemainingAmount()) {
+                        ++NumberOfCancellationsNoGas;
+                        hasNoGas = true;
+
+                    } else {
+
+                        // mark gas pump as used
+                        // would use an atomic instead in C++
+                        UsedGasPumps.add(iterator);
+
+                        gasPump.pumpGas(amountInLiters);
+                        Revenue += Prices.get(type) * amountInLiters;
+                        ++NumberOfSales;
+
+                        // Normaly I would let GasPump return a bool when done.
+                        ///////////////////////////////////////////////////////
+                        try {
+                            Thread.sleep((long) (amountInLiters * 100));
+                        } catch (InterruptedException e) {
+                            // ignored
+                        }
+                        ///////////////////////////////////////////////////////
+
+                        // Free pump from usage
+                        UsedGasPumps.remove(iterator);
+                        return Prices.get(type) * amountInLiters;
+                    }
+                }
+            }
+        }
+        if (hasNoGas) {
             throw new NotEnoughGasException();
         }
-        // If maxPricePerLiter > GasType price
-        if (maxPricePerLiter < 0) {
-            // Add to failed because of price
-            // Throw exception
-            throw new GasTooExpensiveException();
-        }
-        // mark gas pump as used
-        // gaspump liters - amountinliters
-        // total revenue + current price of gas
-        // add to number of successful sales
-        // else throw exception no gas pump free
-        // else
-        // Throw exception no pump for that gas type
+        // when no transaction has been done because there is no gas pump of that type
         return 0;
     }
 
@@ -141,11 +173,12 @@ public final class GasStationImplementation implements GasStation {
      */
     public double getPrice(GasType type) {
         // One can not be sure that a price exists
-        if(Prices.get(type) != null){
+        if (Prices.get(type) != null) {
             return Prices.get(type);
         }
-        
-        // since we run a business, the gas station will never pay for people to get their gas here
+
+        // since we run a business, the gas station will never pay for people to get
+        // their gas here
         return -1;
     }
 
@@ -156,7 +189,7 @@ public final class GasStationImplementation implements GasStation {
      * @param price the new price per liter for this type of gas
      */
     public void setPrice(GasType type, double price) {
-        if(Prices.putIfAbsent(type, price) != null){
+        if (Prices.putIfAbsent(type, price) != null) {
             Prices.replace(type, price);
         }
     }
