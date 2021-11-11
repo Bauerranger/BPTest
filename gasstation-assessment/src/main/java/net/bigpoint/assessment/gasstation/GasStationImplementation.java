@@ -1,15 +1,25 @@
 package net.bigpoint.assessment.gasstation;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 
 import net.bigpoint.assessment.gasstation.exceptions.NotEnoughGasException;
 import net.bigpoint.assessment.gasstation.exceptions.GasTooExpensiveException;
 
 public final class GasStationImplementation implements GasStation {
 
-    Collection<GasPump> GasPumps = null;
-    Map<GasType, Double> Prices;
+    Collection<GasPump> GasPumps = new HashSet<GasPump>();
+    List<Integer> UsedGasPumps = new ArrayList<Integer>();
+    Map<GasType, Double> Prices = new HashMap<GasType, Double>();
+
+    double Revenue = 0;
+    int NumberOfSales = 0;
+    int NumberOfCancellationsNoGas = 0;
+    int NumberOfCancellationsTooExpensive = 0;
 
     /**
      * Add a gas pump to this station. This is used to set up this station.
@@ -17,10 +27,13 @@ public final class GasStationImplementation implements GasStation {
      * @param pump the gas pump
      */
     public void addGasPump(GasPump pump) {
-        // Check if number of gas types is same as gas types in map
-        // If number of gas types != map
-        // add gas type to map
-        // set standart price
+        // It is unclear if a gas station always has all gas types available
+        if (Prices.size() < GasType.values().length) {
+            // add gas type to map
+            // set standart price
+            Prices.put(pump.getGasType(), 1.5);
+        }
+
         GasPumps.add(pump);
     }
 
@@ -32,10 +45,13 @@ public final class GasStationImplementation implements GasStation {
      * @return A collection of all gas pumps.
      */
     public Collection<GasPump> getGasPumps() {
-        // Create new collection on heap
-        // Add entries from the member variable Gaspumps
-        // Return new collection
-        return GasPumps;
+        // Create new collection so it can be manipulated
+        Collection<GasPump> gasPumps = new HashSet<>();
+        for (GasPump gasPump : GasPumps) {
+            gasPumps.add(gasPump);
+        }
+
+        return gasPumps;
     }
 
     /**
@@ -56,25 +72,25 @@ public final class GasStationImplementation implements GasStation {
     public double buyGas(GasType type, double amountInLiters, double maxPricePerLiter)
             throws NotEnoughGasException, GasTooExpensiveException {
         // If type of gas pump
-            // Search for unused gas pump
-            // if unused gas pump
-                // If amount of litres > litres of gas type
-                if (amountInLiters < 0) {
-                    // Add to failed because of no more litres
-                    // Throw exception
-                    throw new NotEnoughGasException();
-                }
-                // If maxPricePerLiter > GasType price
-                if (maxPricePerLiter < 0) {
-                    // Add to failed because of price
-                    // Throw exception
-                    throw new GasTooExpensiveException();
-                }
-                // mark gas pump as used
-                // gaspump liters -  amountinliters
-                // total revenue + current price of gas
-                // add to number of successful sales
-            // else throw exception no gas pump free
+        // Search for unused gas pump
+        // if unused gas pump
+        // If amount of litres > litres of gas type
+        if (amountInLiters < 0) {
+            // Add to failed because of no more litres
+            // Throw exception
+            throw new NotEnoughGasException();
+        }
+        // If maxPricePerLiter > GasType price
+        if (maxPricePerLiter < 0) {
+            // Add to failed because of price
+            // Throw exception
+            throw new GasTooExpensiveException();
+        }
+        // mark gas pump as used
+        // gaspump liters - amountinliters
+        // total revenue + current price of gas
+        // add to number of successful sales
+        // else throw exception no gas pump free
         // else
         // Throw exception no pump for that gas type
         return 0;
@@ -84,8 +100,7 @@ public final class GasStationImplementation implements GasStation {
      * @return the total revenue generated
      */
     public double getRevenue() {
-        // return revenue
-        return 0;
+        return Revenue;
     }
 
     /**
@@ -95,8 +110,7 @@ public final class GasStationImplementation implements GasStation {
      * @return the number of sales that were successful
      */
     public int getNumberOfSales() {
-        // return number of sales
-        return 0;
+        return NumberOfSales;
     }
 
     /**
@@ -105,7 +119,7 @@ public final class GasStationImplementation implements GasStation {
      */
     public int getNumberOfCancellationsNoGas() {
         // return number of unsuccessful sales due to not enough gas
-        return 0;
+        return NumberOfCancellationsNoGas;
     }
 
     /**
@@ -116,7 +130,7 @@ public final class GasStationImplementation implements GasStation {
      */
     public int getNumberOfCancellationsTooExpensive() {
         // return number of unsuccessful sales due to high price
-        return 0;
+        return NumberOfCancellationsTooExpensive;
     }
 
     /**
@@ -126,10 +140,13 @@ public final class GasStationImplementation implements GasStation {
      * @return the price per liter for this type of gas
      */
     public double getPrice(GasType type) {
-        // Check if key is there 
-        // return value
-        //if not throw exception.
-        return 0;
+        // One can not be sure that a price exists
+        if(Prices.get(type) != null){
+            return Prices.get(type);
+        }
+        
+        // since we run a business, the gas station will never pay for people to get their gas here
+        return -1;
     }
 
     /**
@@ -139,20 +156,8 @@ public final class GasStationImplementation implements GasStation {
      * @param price the new price per liter for this type of gas
      */
     public void setPrice(GasType type, double price) {
-        
-        switch (type) {
-            case REGULAR:  
-            // Check if key is there 
-            // change value.
-            // If there is no pump for this type
-            // throw exception
-                     break;
-            case DIESEL:
-                     break;
-            case SUPER:
-                     break;
-            default:
-                     break;
+        if(Prices.putIfAbsent(type, price) != null){
+            Prices.replace(type, price);
         }
     }
 }
