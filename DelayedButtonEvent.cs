@@ -28,7 +28,7 @@ public class DelayedButtonEvent : MonoBehaviour
 
 	private static void OnButtonClick(Action delayedAction, float delay)
 	{
-		DeferredExecutor.Instance.ExecuteLater(delayedAction, delay);
+		DeferredHandler.AddForLaterExecution(delayedAction, delay);
 	}
 
 	private void OnDestroy()
@@ -37,7 +37,7 @@ public class DelayedButtonEvent : MonoBehaviour
 
 		if (cancelDelayedEventOnDestroy)
 		{
-			DeferredExecutor.Instance.CancelExecution();
+			DeferredHandler.CancelExecution();
 		}
 		else
 		{

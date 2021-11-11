@@ -20,14 +20,8 @@ public class DelayedTrigger : MonoBehaviour
 	[SerializeField]
 	private float delay;
 
-	private DeferredExecutor deferredExecutor;
 
 	private readonly List<PendingAction> pendingActions = new List<PendingAction>();
-
-	private void Start()
-	{
-		deferredExecutor = DeferredExecutor.Instance;
-	}
 
 	private void OnTriggerEnter(Collider otherCollider)
 	{
@@ -36,13 +30,13 @@ public class DelayedTrigger : MonoBehaviour
 
 		// We schedule PendingAction.Invoke instead of delayedEvent.Invoke.
 		// Otherwise we would cancel all scheduled delayedEvent.Invoke actions and not only the one for the otherCollider, when a collider leaves the trigger.
-		deferredExecutor.ExecuteLater(pendingAction.Invoke, delay);
+		DeferredHandler.AddForLaterExecution(pendingAction.Invoke, delay);
 	}
 
 	private void OnTriggerExit(Collider other)
 	{
 		PendingAction pendingAction = pendingActions.First(pa => pa.Collider == other);
-		deferredExecutor.CancelExecution(pendingAction.Invoke);
+		DeferredHandler.CancelExecution(pendingAction.Invoke);
 
 		pendingActions.Remove(pendingAction);
 	}
@@ -51,7 +45,7 @@ public class DelayedTrigger : MonoBehaviour
 	{
 		foreach (PendingAction pendingAction in pendingActions)
 		{
-			deferredExecutor.CancelExecution(pendingAction.Invoke);
+			DeferredHandler.CancelExecution(pendingAction.Invoke);
 		}
 	}
 
